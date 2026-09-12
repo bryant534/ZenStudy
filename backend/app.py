@@ -12,7 +12,7 @@ app = Flask(
 )
 
 # secret key
-app.secret_key = "angela" 
+app.secret_key = os.getenv("SECRET_KEY")
 
 app.register_blueprint(auth)
 

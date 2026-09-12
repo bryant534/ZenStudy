@@ -6,6 +6,7 @@ import os
 import json
 from anthropic import Anthropic
 from dotenv import load_dotenv
+from werkzeug.security import generate_password_hash, check_password_hash
 
 load_dotenv()
 
@@ -41,17 +42,17 @@ def login():
 
         connection = get_db()
         cursor = connection.cursor()
-        cursor.execute("SELECT * FROM users WHERE username = ? AND password = ?", (username, password))
+        cursor.execute("SELECT * FROM users WHERE username = ?", (username,))
         user = cursor.fetchone()
         connection.close()
 
-        if user:
+        if user and check_password_hash(user["password"], password):
             session['user_id'] = user["id"]
             session['username'] = user["username"]
             return redirect(url_for("auth.home"))
         else:
             return "Wrong username or password"
-
+        
     return render_template("login/login.html")
 
 
@@ -80,9 +81,9 @@ def signup():
             return "Username already exists"
 
         cursor.execute("""
-            INSERT INTO users (email, username, password)
-            VALUES (?, ?, ?)
-        """, (email, username, password))
+        INSERT INTO users (email, username, password)
+        VALUES (?, ?, ?)
+        """, (email, username, generate_password_hash(password)))
         connection.commit()
         connection.close()
 
@@ -120,9 +121,36 @@ def home():
     )
 
 
+def expire_stale_active_sessions(cursor):
+    """If a session was started but the person never came back to press
+    Stop/Finish (closed the tab, browser crash, etc.), it would otherwise
+    stay 'active' forever. Auto-close anything that's run well past its
+    planned duration, logging what was actually studied."""
+    cursor.execute("SELECT user_id, topic, started_at, planned_minutes FROM active_sessions")
+    rows = cursor.fetchall()
+    now = datetime.now()
+    grace_minutes = 15
+
+    for r in rows:
+        started_at = datetime.strptime(r["started_at"], "%Y-%m-%d %H:%M:%S")
+        elapsed_minutes = (now - started_at).total_seconds() / 60
+
+        if elapsed_minutes > (r["planned_minutes"] or 0) + grace_minutes:
+            actual_minutes = max(1, int(min(elapsed_minutes, r["planned_minutes"] or elapsed_minutes)))
+            cursor.execute("""
+                INSERT INTO study_sessions (user_id, topic, duration_minutes, study_date)
+                VALUES (?, ?, ?, date('now'))
+            """, (r["user_id"], r["topic"], actual_minutes))
+            cursor.execute("DELETE FROM active_sessions WHERE user_id = ?", (r["user_id"],))
+
+    cursor.connection.commit()
+
+
 def get_active_study_list(cursor, limit=5):
+    expire_stale_active_sessions(cursor)
+
     cursor.execute("""
-        SELECT users.username, active_sessions.topic, active_sessions.started_at
+        SELECT users.id as user_id, users.username, active_sessions.topic, active_sessions.started_at
         FROM active_sessions
         JOIN users ON users.id = active_sessions.user_id
         ORDER BY active_sessions.started_at DESC
@@ -136,6 +164,7 @@ def get_active_study_list(cursor, limit=5):
         started_at = datetime.strptime(r["started_at"], "%Y-%m-%d %H:%M:%S")
         elapsed_seconds = int((now - started_at).total_seconds())
         result.append({
+            "user_id": r["user_id"],
             "username": r["username"],
             "topic": r["topic"],
             "elapsed_seconds": max(0, elapsed_seconds)
@@ -156,7 +185,7 @@ def api_active_sessions():
     return jsonify({"status": "success", "active_list": active_list})
 
 
-# ================= STUDY ================= 
+# ================= STUDY =================
 
 @auth.route("/study")
 def study():
@@ -191,45 +220,45 @@ def call_claude_json(system_prompt, user_prompt):
 
 def generate_quiz(material, count):
     system_prompt = (
-        "Kamu adalah pembuat soal quiz untuk aplikasi belajar bernama ZenStudy. "
-        "Balas HANYA dengan JSON valid, tanpa teks lain, tanpa markdown code fence, sesuai skema persis ini: "
+        "You are a quiz question generator for a study app called ZenStudy. "
+        "Reply with ONLY valid JSON, no other text, no markdown code fences, following exactly this schema: "
         '{"questions": [{"question": "...", "options": ["...", "...", "...", "..."], '
         '"correct_index": 0, "explanation": "..."}]}. '
-        "correct_index adalah index 0-3 dari opsi yang benar. Semua teks dalam Bahasa Indonesia."
+        "correct_index is the 0-3 index of the correct option. All text in English."
     )
-    user_prompt = f"Buatkan {count} soal pilihan ganda (4 opsi) dari materi berikut:\n\n{material}"
+    user_prompt = f"Create {count} multiple-choice questions (4 options) from the following material:\n\n{material}"
     return call_claude_json(system_prompt, user_prompt)
 
 
 def generate_flashcards(material, count):
     system_prompt = (
-        "Kamu adalah pembuat flashcard untuk aplikasi belajar. "
-        "Balas HANYA dengan JSON valid, tanpa teks lain, sesuai skema persis ini: "
+        "You are a flashcard generator for a study app. "
+        "Reply with ONLY valid JSON, no other text, following exactly this schema: "
         '{"cards": [{"front": "...", "back": "..."}]}. '
-        "front berisi istilah/pertanyaan singkat, back berisi jawaban/penjelasan singkat. Bahasa Indonesia."
+        "front contains a short term/question, back contains a short answer/explanation. English."
     )
-    user_prompt = f"Buatkan {count} flashcard dari materi berikut:\n\n{material}"
+    user_prompt = f"Create {count} flashcards from the following material:\n\n{material}"
     return call_claude_json(system_prompt, user_prompt)
 
 
 def generate_summary(material):
     system_prompt = (
-        "Kamu adalah asisten belajar. Balas HANYA dengan JSON valid, tanpa teks lain, sesuai skema persis ini: "
+        "You are a study assistant. Reply with ONLY valid JSON, no other text, following exactly this schema: "
         '{"summary": "..."}. '
-        "Isi summary dengan rangkuman poin-poin penting dalam Bahasa Indonesia, "
-        "gunakan format: baris diawali '- ' untuk bullet point, dan **kata** untuk penekanan penting."
+        "Fill summary with a summary of the key points in English, "
+        "using this format: lines starting with '- ' for bullet points, and **word** for important emphasis."
     )
-    user_prompt = f"Rangkum materi berikut jadi poin-poin penting:\n\n{material}"
+    user_prompt = f"Summarize the following material into key points:\n\n{material}"
     return call_claude_json(system_prompt, user_prompt)
 
 
 def answer_question(question, material):
     system_prompt = (
-        "Kamu adalah tutor belajar yang ramah untuk aplikasi ZenStudy. Jawab pertanyaan siswa "
-        "(termasuk soal matematika, sains, atau apapun) dengan jelas, boleh step-by-step kalau perlu. "
-        "Jawab dalam Bahasa Indonesia, teks biasa (bukan JSON)."
+        "You are a friendly study tutor for the ZenStudy app. Answer the student's question "
+        "(including math, science, or anything else) clearly, using step-by-step explanations when needed. "
+        "Answer in English, as plain text (not JSON)."
     )
-    user_prompt = f"Konteks materi:\n{material}\n\nPertanyaan: {question}" if material else question
+    user_prompt = f"Material context:\n{material}\n\nQuestion: {question}" if material else question
 
     response = ai_client.messages.create(
         model=AI_MODEL,
@@ -253,9 +282,9 @@ def ai_generate():
     count = int(data.get("count") or 5)
 
     if mode in ("quiz", "flashcard", "summary") and not material:
-        return jsonify({"status": "error", "message": "Materinya kosong, tempel dulu materi belajarmu"}), 400
+        return jsonify({"status": "error", "message": "The material is empty, please paste your study material first"}), 400
     if mode == "ask" and not question:
-        return jsonify({"status": "error", "message": "Pertanyaannya kosong"}), 400
+        return jsonify({"status": "error", "message": "The question is empty"}), 400
 
     try:
         if mode == "quiz":
@@ -267,13 +296,41 @@ def ai_generate():
         elif mode == "ask":
             result = answer_question(question, material)
         else:
-            return jsonify({"status": "error", "message": "Mode tidak dikenali"}), 400
+            return jsonify({"status": "error", "message": "Unrecognized mode"}), 400
     except json.JSONDecodeError:
-        return jsonify({"status": "error", "message": "AI mengembalikan format tak terduga, coba lagi"}), 500
+        return jsonify({"status": "error", "message": "AI returned an unexpected format, please try again"}), 500
     except Exception as e:
-        return jsonify({"status": "error", "message": f"AI gagal merespons: {str(e)}"}), 500
+        return jsonify({"status": "error", "message": f"AI failed to respond: {str(e)}"}), 500
 
     return jsonify({"status": "success", "mode": mode, "result": result})
+
+@auth.route("/api/study/status")
+def study_status():
+    if 'user_id' not in session:
+        return jsonify({"status": "error", "message": "Not logged in"}), 401
+
+    user_id = session['user_id']
+    connection = get_db()
+    cursor = connection.cursor()
+    cursor.execute("SELECT topic, started_at, planned_minutes FROM active_sessions WHERE user_id = ?", (user_id,))
+    active = cursor.fetchone()
+    connection.close()
+
+    if not active:
+        return jsonify({"status": "success", "active": None})
+
+    started_at = datetime.strptime(active["started_at"], "%Y-%m-%d %H:%M:%S")
+    elapsed_seconds = max(0, int((datetime.now() - started_at).total_seconds()))
+
+    return jsonify({
+        "status": "success",
+        "active": {
+            "topic": active["topic"],
+            "planned_minutes": active["planned_minutes"],
+            "elapsed_seconds": elapsed_seconds
+        }
+    })
+
 
 @auth.route("/api/study/start", methods=["POST"])
 def start_study_session():
@@ -281,7 +338,7 @@ def start_study_session():
         return jsonify({"status": "error", "message": "Not logged in"}), 401
 
     data = request.get_json()
-    topic = (data.get("topic") or "Belajar").strip()
+    topic = (data.get("topic") or "Study").strip()
     planned_minutes = int(data.get("planned_minutes") or 25)
     user_id = session['user_id']
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -366,38 +423,81 @@ def save_study_session():
 # ================= PROFILE (streak & statistic) =================
 
 @auth.route("/profile")
-def profile():
+@auth.route("/profile/<int:user_id>")
+def profile(user_id=None):
     if 'username' not in session:
         return redirect(url_for("auth.login"))
 
-    user_id = session['user_id']
+    viewer_id = session['user_id']
+    target_id = user_id if user_id is not None else viewer_id
+    is_own_profile = (target_id == viewer_id)
+
     connection = get_db()
     cursor = connection.cursor()
+
+    cursor.execute("SELECT id, username, bio FROM users WHERE id = ?", (target_id,))
+    target_user = cursor.fetchone()
+    if not target_user:
+        connection.close()
+        return redirect(url_for("auth.home"))
+
+    cursor.execute("SELECT COUNT(*) as cnt FROM follows WHERE followed_id = ?", (target_id,))
+    follower_count = cursor.fetchone()["cnt"]
+    cursor.execute("SELECT COUNT(*) as cnt FROM follows WHERE follower_id = ?", (target_id,))
+    following_count = cursor.fetchone()["cnt"]
+
+    is_following = False
+    is_blocked_by_me = False
+    if not is_own_profile:
+        cursor.execute("SELECT 1 FROM follows WHERE follower_id = ? AND followed_id = ?", (viewer_id, target_id))
+        is_following = cursor.fetchone() is not None
+        cursor.execute("SELECT 1 FROM blocks WHERE blocker_id = ? AND blocked_id = ?", (viewer_id, target_id))
+        is_blocked_by_me = cursor.fetchone() is not None
 
     cursor.execute("""
         SELECT DISTINCT study_date FROM study_sessions
         WHERE user_id = ? ORDER BY study_date ASC
-    """, (user_id,))
+    """, (target_id,))
     all_dates = [datetime.strptime(r["study_date"], "%Y-%m-%d").date() for r in cursor.fetchall()]
 
     current_streak, longest_streak, is_active_today = compute_streaks(all_dates)
 
-    cursor.execute("SELECT AVG(duration_minutes) as avg_dur FROM study_sessions WHERE user_id = ?", (user_id,))
+    cursor.execute("SELECT AVG(duration_minutes) as avg_dur FROM study_sessions WHERE user_id = ?", (target_id,))
     avg_row = cursor.fetchone()
     avg_minutes = round(avg_row["avg_dur"] or 0)
 
     cursor.execute("""
         SELECT SUM(duration_minutes) as total_min FROM study_sessions
         WHERE user_id = ? AND study_date >= date('now', '-7 days')
-    """, (user_id,))
+    """, (target_id,))
     week_row = cursor.fetchone()
     weekly_hours = round((week_row["total_min"] or 0) / 60, 1)
+
+    cursor.execute("SELECT favorite_song_title, favorite_song_artist FROM users WHERE id = ?", (target_id,))
+    song_row = cursor.fetchone()
+
+    cursor.execute("""
+        SELECT id, content, created_at FROM posts
+        WHERE user_id = ?
+        ORDER BY created_at DESC
+    """, (target_id,))
+    profile_posts = cursor.fetchall()
 
     connection.close()
 
     return render_template(
         "home/profile.html",
-        username=session['username'],
+        username=target_user["username"],
+        target_user_id=target_id,
+        bio=target_user["bio"] or "",
+        favorite_song_title=song_row["favorite_song_title"] or "",
+        favorite_song_artist=song_row["favorite_song_artist"] or "",
+        profile_posts=profile_posts,
+        is_own_profile=is_own_profile,
+        follower_count=follower_count,
+        following_count=following_count,
+        is_following=is_following,
+        is_blocked_by_me=is_blocked_by_me,
         current_streak=current_streak,
         longest_streak=longest_streak,
         is_active_today=is_active_today,
@@ -405,6 +505,180 @@ def profile():
         weekly_hours=weekly_hours
     )
 
+
+@auth.route("/api/profile/bio", methods=["PUT"])
+def update_bio():
+    if 'user_id' not in session:
+        return jsonify({"status": "error", "message": "Not logged in"}), 401
+
+    data = request.get_json()
+    bio = (data.get("bio") or "").strip()[:280]
+
+    connection = get_db()
+    cursor = connection.cursor()
+    cursor.execute("UPDATE users SET bio = ? WHERE id = ?", (bio, session['user_id']))
+    connection.commit()
+    connection.close()
+
+    return jsonify({"status": "success", "bio": bio})
+
+
+def is_blocked_either_way(cursor, user_a, user_b):
+    cursor.execute("""
+        SELECT 1 FROM blocks
+        WHERE (blocker_id = ? AND blocked_id = ?)
+           OR (blocker_id = ? AND blocked_id = ?)
+    """, (user_a, user_b, user_b, user_a))
+    return cursor.fetchone() is not None
+
+@auth.route("/api/profile/song", methods=["PUT"])
+def update_favorite_song():
+    if 'user_id' not in session:
+        return jsonify({"status": "error"}), 401
+
+    data = request.get_json()
+    title = (data.get("title") or "").strip()[:100]
+    artist = (data.get("artist") or "").strip()[:100]
+
+    connection = get_db()
+    cursor = connection.cursor()
+    cursor.execute("UPDATE users SET favorite_song_title = ?, favorite_song_artist = ? WHERE id = ?",
+                   (title, artist, session['user_id']))
+    connection.commit()
+    connection.close()
+
+    return jsonify({"status": "success"})
+
+@auth.route("/api/users/<int:user_id>/follow", methods=["POST"])
+def toggle_follow(user_id):
+    if 'user_id' not in session:
+        return jsonify({"status": "error"}), 401
+    viewer_id = session['user_id']
+    if viewer_id == user_id:
+        return jsonify({"status": "error", "message": "You cannot follow yourself"}), 400
+
+    connection = get_db()
+    cursor = connection.cursor()
+
+    if is_blocked_either_way(cursor, viewer_id, user_id):
+        connection.close()
+        return jsonify({"status": "error", "message": "You can't follow this user"}), 403
+
+    cursor.execute("SELECT id FROM follows WHERE follower_id = ? AND followed_id = ?", (viewer_id, user_id))
+    existing = cursor.fetchone()
+
+    if existing:
+        cursor.execute("DELETE FROM follows WHERE id = ?", (existing["id"],))
+        following = False
+    else:
+        cursor.execute("INSERT INTO follows (follower_id, followed_id) VALUES (?, ?)", (viewer_id, user_id))
+        following = True
+
+    connection.commit()
+    cursor.execute("SELECT COUNT(*) as cnt FROM follows WHERE followed_id = ?", (user_id,))
+    follower_count = cursor.fetchone()["cnt"]
+    connection.close()
+
+    return jsonify({"status": "success", "following": following, "follower_count": follower_count})
+
+
+@auth.route("/api/users/<int:user_id>/block", methods=["POST"])
+def toggle_block(user_id):
+    if 'user_id' not in session:
+        return jsonify({"status": "error"}), 401
+    viewer_id = session['user_id']
+    if viewer_id == user_id:
+        return jsonify({"status": "error", "message": "You cannot block yourself"}), 400
+
+    connection = get_db()
+    cursor = connection.cursor()
+    cursor.execute("SELECT id FROM blocks WHERE blocker_id = ? AND blocked_id = ?", (viewer_id, user_id))
+    existing = cursor.fetchone()
+
+    if existing:
+        cursor.execute("DELETE FROM blocks WHERE id = ?", (existing["id"],))
+        blocked = False
+    else:
+        cursor.execute("INSERT INTO blocks (blocker_id, blocked_id) VALUES (?, ?)", (viewer_id, user_id))
+        # Blocking severs any follow relationship in either direction
+        cursor.execute("""
+            DELETE FROM follows
+            WHERE (follower_id = ? AND followed_id = ?) OR (follower_id = ? AND followed_id = ?)
+        """, (viewer_id, user_id, user_id, viewer_id))
+        blocked = True
+
+    connection.commit()
+    connection.close()
+
+    return jsonify({"status": "success", "blocked": blocked})
+
+
+@auth.route("/api/users/<int:user_id>/report", methods=["POST"])
+def report_user(user_id):
+    if 'user_id' not in session:
+        return jsonify({"status": "error"}), 401
+    viewer_id = session['user_id']
+    if viewer_id == user_id:
+        return jsonify({"status": "error", "message": "You cannot report yourself"}), 400
+
+    data = request.get_json()
+    reason = (data.get("reason") or "").strip()
+    if not reason:
+        return jsonify({"status": "error", "message": "Please provide a reason"}), 400
+
+    connection = get_db()
+    cursor = connection.cursor()
+    cursor.execute("INSERT INTO reports (reporter_id, reported_id, reason) VALUES (?, ?, ?)",
+                   (viewer_id, user_id, reason))
+    connection.commit()
+    connection.close()
+
+    return jsonify({"status": "success"})
+
+
+@auth.route("/api/users/<int:user_id>/card")
+def get_user_card(user_id):
+    if 'user_id' not in session:
+        return jsonify({"status": "error"}), 401
+
+    viewer_id = session['user_id']
+    connection = get_db()
+    cursor = connection.cursor()
+    cursor.execute("SELECT id, username, bio FROM users WHERE id = ?", (user_id,))
+    user = cursor.fetchone()
+
+    if not user:
+        connection.close()
+        return jsonify({"status": "error", "message": "User not found"}), 404
+
+    cursor.execute("SELECT COUNT(*) as cnt FROM follows WHERE followed_id = ?", (user_id,))
+    follower_count = cursor.fetchone()["cnt"]
+    cursor.execute("SELECT COUNT(*) as cnt FROM follows WHERE follower_id = ?", (user_id,))
+    following_count = cursor.fetchone()["cnt"]
+
+    is_following = False
+    is_blocked_by_me = False
+    if viewer_id != user_id:
+        cursor.execute("SELECT 1 FROM follows WHERE follower_id = ? AND followed_id = ?", (viewer_id, user_id))
+        is_following = cursor.fetchone() is not None
+        cursor.execute("SELECT 1 FROM blocks WHERE blocker_id = ? AND blocked_id = ?", (viewer_id, user_id))
+        is_blocked_by_me = cursor.fetchone() is not None
+
+    connection.close()
+
+    return jsonify({
+        "status": "success",
+        "user": {
+            "id": user["id"],
+            "username": user["username"],
+            "bio": user["bio"] or "",
+            "follower_count": follower_count,
+            "following_count": following_count,
+            "is_following": is_following,
+            "is_blocked_by_me": is_blocked_by_me,
+            "is_own": user["id"] == viewer_id
+        }
+    })
 
 def compute_streaks(all_dates):
     if not all_dates:
@@ -441,7 +715,7 @@ def compute_streaks(all_dates):
     return current_streak, longest_streak, is_active_today
 
 
-# ================= Calender =================
+# ================= Calendar =================
 
 @auth.route("/calendar")
 def calendar():
@@ -492,7 +766,7 @@ def add_calendar_event():
     user_id = session['user_id']
 
     if not event_date or not event_time or not title:
-        return jsonify({"status": "error", "message": "Tanggal, jam, dan kegiatan wajib diisi"}), 400
+        return jsonify({"status": "error", "message": "Date, time, and activity are required"}), 400
 
     connection = get_db()
     cursor = connection.cursor()
@@ -537,40 +811,6 @@ def global_chat():
 
 # ---------- API: Feed / Post ----------
 
-@auth.route("/api/posts", methods=["GET"])
-def get_posts():
-    if 'user_id' not in session:
-        return jsonify({"status": "error"}), 401
-
-    user_id = session['user_id']
-    connection = get_db()
-    cursor = connection.cursor()
-    cursor.execute("""
-        SELECT posts.id, posts.content, posts.created_at, users.username,
-               (SELECT COUNT(*) FROM post_likes WHERE post_id = posts.id) AS like_count,
-               (SELECT COUNT(*) FROM post_comments WHERE post_id = posts.id) AS comment_count,
-               EXISTS(SELECT 1 FROM post_likes WHERE post_id = posts.id AND user_id = ?) AS liked_by_me
-        FROM posts
-        JOIN users ON users.id = posts.user_id
-        ORDER BY posts.created_at DESC
-        LIMIT 50
-    """, (user_id,))
-    rows = cursor.fetchall()
-    connection.close()
-
-    posts = [{
-        "id": r["id"],
-        "username": r["username"],
-        "content": r["content"],
-        "created_at": r["created_at"],
-        "like_count": r["like_count"],
-        "comment_count": r["comment_count"],
-        "liked_by_me": bool(r["liked_by_me"])
-    } for r in rows]
-
-    return jsonify({"status": "success", "posts": posts})
-
-
 @auth.route("/api/posts", methods=["POST"])
 def create_post():
     if 'user_id' not in session:
@@ -578,7 +818,7 @@ def create_post():
 
     content = (request.get_json().get("content") or "").strip()
     if not content:
-        return jsonify({"status": "error", "message": "Post tidak boleh kosong"}), 400
+        return jsonify({"status": "error", "message": "Post cannot be empty"}), 400
 
     connection = get_db()
     cursor = connection.cursor()
@@ -590,30 +830,40 @@ def create_post():
     return jsonify({"status": "success", "post_id": new_id})
 
 
-@auth.route("/api/posts/<int:post_id>/like", methods=["POST"])
-def toggle_like(post_id):
+@auth.route("/api/posts", methods=["GET"])
+def get_posts():
     if 'user_id' not in session:
         return jsonify({"status": "error"}), 401
 
     user_id = session['user_id']
     connection = get_db()
     cursor = connection.cursor()
-    cursor.execute("SELECT id FROM post_likes WHERE post_id = ? AND user_id = ?", (post_id, user_id))
-    existing = cursor.fetchone()
-
-    if existing:
-        cursor.execute("DELETE FROM post_likes WHERE id = ?", (existing["id"],))
-        liked = False
-    else:
-        cursor.execute("INSERT INTO post_likes (post_id, user_id) VALUES (?, ?)", (post_id, user_id))
-        liked = True
-
-    connection.commit()
-    cursor.execute("SELECT COUNT(*) as cnt FROM post_likes WHERE post_id = ?", (post_id,))
-    like_count = cursor.fetchone()["cnt"]
+    cursor.execute("""
+        SELECT posts.id, posts.user_id, posts.content, posts.created_at, users.username,
+               (SELECT COUNT(*) FROM post_likes WHERE post_id = posts.id) AS like_count,
+               (SELECT COUNT(*) FROM post_comments WHERE post_id = posts.id) AS comment_count,
+               EXISTS(SELECT 1 FROM post_likes WHERE post_id = posts.id AND user_id = ?) AS liked_by_me
+        FROM posts
+        JOIN users ON users.id = posts.user_id
+        WHERE posts.user_id NOT IN (
+            SELECT blocked_id FROM blocks WHERE blocker_id = ?
+            UNION
+            SELECT blocker_id FROM blocks WHERE blocked_id = ?
+        )
+        ORDER BY posts.created_at DESC
+        LIMIT 50
+    """, (user_id, user_id, user_id))
+    rows = cursor.fetchall()
     connection.close()
 
-    return jsonify({"status": "success", "liked": liked, "like_count": like_count})
+    posts = [{
+        "id": r["id"], "user_id": r["user_id"], "username": r["username"],
+        "content": r["content"], "created_at": r["created_at"],
+        "like_count": r["like_count"], "comment_count": r["comment_count"],
+        "liked_by_me": bool(r["liked_by_me"])
+    } for r in rows]
+
+    return jsonify({"status": "success", "posts": posts})
 
 
 @auth.route("/api/posts/<int:post_id>/comments", methods=["GET"])
@@ -624,7 +874,7 @@ def get_comments(post_id):
     connection = get_db()
     cursor = connection.cursor()
     cursor.execute("""
-        SELECT post_comments.content, post_comments.created_at, users.username
+        SELECT post_comments.user_id, post_comments.content, post_comments.created_at, users.username
         FROM post_comments
         JOIN users ON users.id = post_comments.user_id
         WHERE post_id = ?
@@ -633,7 +883,7 @@ def get_comments(post_id):
     rows = cursor.fetchall()
     connection.close()
 
-    comments = [{"username": r["username"], "content": r["content"], "created_at": r["created_at"]} for r in rows]
+    comments = [{"user_id": r["user_id"], "username": r["username"], "content": r["content"], "created_at": r["created_at"]} for r in rows]
     return jsonify({"status": "success", "comments": comments})
 
 
@@ -644,7 +894,7 @@ def add_comment(post_id):
 
     content = (request.get_json().get("content") or "").strip()
     if not content:
-        return jsonify({"status": "error", "message": "Komentar tidak boleh kosong"}), 400
+        return jsonify({"status": "error", "message": "Comment cannot be empty"}), 400
 
     connection = get_db()
     cursor = connection.cursor()
@@ -656,7 +906,7 @@ def add_comment(post_id):
     return jsonify({"status": "success"})
 
 
-# ---------- API: Chat Global ----------
+# ---------- API: Global Chat ----------
 
 @auth.route("/api/chat_messages", methods=["GET"])
 def get_chat_messages():
@@ -667,7 +917,7 @@ def get_chat_messages():
     connection = get_db()
     cursor = connection.cursor()
     cursor.execute("""
-        SELECT chat_messages.id, chat_messages.content, chat_messages.created_at, users.username
+        SELECT chat_messages.id, chat_messages.user_id, chat_messages.content, chat_messages.created_at, users.username
         FROM chat_messages
         JOIN users ON users.id = chat_messages.user_id
         WHERE chat_messages.id > ?
@@ -677,7 +927,7 @@ def get_chat_messages():
     rows = cursor.fetchall()
     connection.close()
 
-    messages = [{"id": r["id"], "username": r["username"], "content": r["content"], "created_at": r["created_at"]} for r in rows]
+    messages = [{"id": r["id"], "user_id": r["user_id"], "username": r["username"], "content": r["content"], "created_at": r["created_at"]} for r in rows]
     return jsonify({"status": "success", "messages": messages})
 
 
@@ -688,7 +938,7 @@ def send_chat_message():
 
     content = (request.get_json().get("content") or "").strip()
     if not content:
-        return jsonify({"status": "error", "message": "Pesan tidak boleh kosong"}), 400
+        return jsonify({"status": "error", "message": "Message cannot be empty"}), 400
 
     connection = get_db()
     cursor = connection.cursor()
@@ -746,12 +996,12 @@ def start_challenge(challenge_id):
     connection.close()
 
     if not ch:
-        return jsonify({"status": "error", "message": "Challenge tidak ditemukan"}), 404
+        return jsonify({"status": "error", "message": "Challenge not found"}), 404
 
     try:
         quiz_data = generate_quiz(ch["topic"], ch["question_count"])
     except Exception as e:
-        return jsonify({"status": "error", "message": f"AI gagal membuat soal: {str(e)}"}), 500
+        return jsonify({"status": "error", "message": f"AI failed to generate questions: {str(e)}"}), 500
 
     return jsonify({"status": "success", "questions": quiz_data["questions"]})
 
@@ -784,9 +1034,9 @@ def messages():
         return redirect(url_for("auth.login"))
 
     conversations = [
-        {"id": 1, "name": "Nadia Putri", "avatar": "N", "last_message": "Oke siap, besok jam 3 ya!", "time": "12:41", "unread": 2, "online": True},
-        {"id": 2, "name": "Study Group A", "avatar": "S", "last_message": "Kirim ringkasan bab 4 dong", "time": "11:05", "unread": 0, "online": False},
-        {"id": 3, "name": "Rafi Hidayat", "avatar": "R", "last_message": "Makasih infonya!", "time": "Kemarin", "unread": 0, "online": True},
+        {"id": 1, "name": "Nadia Putri", "avatar": "N", "last_message": "Okay sure, tomorrow at 3pm!", "time": "12:41", "unread": 2, "online": True},
+        {"id": 2, "name": "Study Group A", "avatar": "S", "last_message": "Send the chapter 4 summary please", "time": "11:05", "unread": 0, "online": False},
+        {"id": 3, "name": "Rafi Hidayat", "avatar": "R", "last_message": "Thanks for the info!", "time": "Yesterday", "unread": 0, "online": True},
     ]
     return render_template("home/messages.html", username=session['username'], conversations=conversations)
 
@@ -835,7 +1085,7 @@ def add_todo():
     due_date = data.get("due_date") or None
 
     if not task:
-        return jsonify({"status": "error", "message": "Tugas tidak boleh kosong"}), 400
+        return jsonify({"status": "error", "message": "Task cannot be empty"}), 400
 
     connection = get_db()
     cursor = connection.cursor()
@@ -969,7 +1219,7 @@ def get_day_events():
 
     target_date = request.args.get("date")  # "YYYY-MM-DD"
     if not target_date:
-        return jsonify({"status": "error", "message": "Tanggal wajib diisi"}), 400
+        return jsonify({"status": "error", "message": "Date is required"}), 400
 
     connection = get_db()
     cursor = connection.cursor()

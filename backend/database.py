@@ -17,10 +17,10 @@ def add_column_if_missing(table, column_def):
     column_name = column_def.split()[0]
     if not column_exists(table, column_name):
         cursor.execute(f"ALTER TABLE {table} ADD COLUMN {column_def}")
-        print(f"+ kolom '{column_name}' ditambahkan ke {table}")
+        print(f"+ column '{column_name}' added to {table}")
 
 
-# ---------- Tabel user ----------
+# ---------- Users table ----------
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS users(
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -29,8 +29,9 @@ CREATE TABLE IF NOT EXISTS users(
     password TEXT
 )
 """)
+add_column_if_missing("users", "bio TEXT DEFAULT ''")
 
-# ---------- Tabel kalender/jadwal ----------
+# ---------- Calendar/schedule table ----------
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS calendar_events(
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -42,7 +43,7 @@ CREATE TABLE IF NOT EXISTS calendar_events(
 """)
 add_column_if_missing("calendar_events", "event_time TEXT")
 
-# ---------- Tabel sesi belajar yang SUDAH SELESAI (untuk streak & statistik) ----------
+# ---------- COMPLETED study sessions table (for streaks & statistics) ----------
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS study_sessions(
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -55,7 +56,7 @@ CREATE TABLE IF NOT EXISTS study_sessions(
 add_column_if_missing("study_sessions", "topic TEXT")
 add_column_if_missing("study_sessions", "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
 
-# ---------- Tabel sesi yang LAGI JALAN sekarang (buat home "Sedang Belajar") ----------
+# ---------- Table for sessions CURRENTLY IN PROGRESS (for the "Currently Studying" home widget) ----------
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS active_sessions(
     user_id INTEGER PRIMARY KEY,
@@ -66,7 +67,7 @@ CREATE TABLE IF NOT EXISTS active_sessions(
 )
 """)
 
-# ---------- Tabel post (Feed, ala Instagram) ----------
+# ---------- Posts table (Feed, Instagram-style) ----------
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS posts(
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -100,7 +101,7 @@ CREATE TABLE IF NOT EXISTS post_comments(
 )
 """)
 
-# ---------- Tabel chat global ----------
+# ---------- Global chat table ----------
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS chat_messages(
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -111,7 +112,7 @@ CREATE TABLE IF NOT EXISTS chat_messages(
 )
 """)
 
-# ---------- Tabel Challenge bulanan ----------
+# ---------- Monthly challenge table ----------
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS challenges(
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -136,7 +137,7 @@ CREATE TABLE IF NOT EXISTS challenge_attempts(
 )
 """)
 
-# Seed 3 challenge default untuk bulan ini kalau belum ada
+# Seed 3 default challenges for this month if none exist yet
 from datetime import date as _date
 current_month_key = _date.today().strftime("%Y-%m")
 cursor.execute("SELECT COUNT(*) FROM challenges WHERE month_key = ?", (current_month_key,))
@@ -145,13 +146,13 @@ if cursor.fetchone()[0] == 0:
         INSERT INTO challenges (month_key, title, description, topic, question_count)
         VALUES (?, ?, ?, ?, ?)
     """, [
-        (current_month_key, "Dasar Matematika", "Quiz seputar aljabar & aritmatika dasar", "Matematika dasar: aljabar, pecahan, persamaan linear", 5),
-        (current_month_key, "Sains Umum", "Quiz seputar fisika & kimia dasar", "Sains dasar: hukum Newton, reaksi kimia sederhana, sistem tata surya", 5),
-        (current_month_key, "Bahasa & Logika", "Quiz seputar tata bahasa & penalaran logis", "Tata bahasa Indonesia dan Inggris dasar, penalaran logis sederhana", 5),
+        (current_month_key, "Basic Math", "Quiz on basic algebra & arithmetic", "Basic math: algebra, fractions, linear equations", 5),
+        (current_month_key, "General Science", "Quiz on basic physics & chemistry", "Basic science: Newton's laws, simple chemical reactions, the solar system", 5),
+        (current_month_key, "Language & Logic", "Quiz on grammar & logical reasoning", "Basic English grammar, simple logical reasoning", 5),
     ])
-    print(f"+ 3 challenge default untuk bulan {current_month_key} ditambahkan")
+    print(f"+ 3 default challenges for {current_month_key} added")
 
-# ---------- Tabel To Do List ----------
+# ---------- To Do List table ----------
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS todos(
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -164,7 +165,7 @@ CREATE TABLE IF NOT EXISTS todos(
 )
 """)
 
-# ---------- Tabel Notes ----------
+# ---------- Notes table ----------
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS notes(
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -177,7 +178,48 @@ CREATE TABLE IF NOT EXISTS notes(
     FOREIGN KEY(user_id) REFERENCES users(id)
 )
 """)
+# ---------- Follows table ----------
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS follows(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    follower_id INTEGER NOT NULL,
+    followed_id INTEGER NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(follower_id, followed_id),
+    FOREIGN KEY(follower_id) REFERENCES users(id),
+    FOREIGN KEY(followed_id) REFERENCES users(id)
+)
+""")
+
+# ---------- Blocks table ----------
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS blocks(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    blocker_id INTEGER NOT NULL,
+    blocked_id INTEGER NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(blocker_id, blocked_id),
+    FOREIGN KEY(blocker_id) REFERENCES users(id),
+    FOREIGN KEY(blocked_id) REFERENCES users(id)
+)
+""")
+
+# ---------- Reports table ----------
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS reports(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    reporter_id INTEGER NOT NULL,
+    reported_id INTEGER NOT NULL,
+    reason TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(reporter_id) REFERENCES users(id),
+    FOREIGN KEY(reported_id) REFERENCES users(id)
+)
+""")
+
+add_column_if_missing("users", "favorite_song_title TEXT DEFAULT ''")
+add_column_if_missing("users", "favorite_song_artist TEXT DEFAULT ''")
 
 connection.commit()
 connection.close()
-print("Database dan tabel berhasil dibuat / diperbarui!")
+print("Database and tables created / updated successfully!")
