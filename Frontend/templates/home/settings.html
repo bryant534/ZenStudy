@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZenStudy - Settings</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='login/home.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='login/settings.css') }}">
+</head>
+<body>
+
+<div class="overlay" id="overlay"></div>
+
+<div class="app-header">
+  <button id="menu-btn" onclick="toggleSidebar()" aria-label="Menu">☰</button>
+  <h1 class="settings-header-title">Settings</h1>
+</div>
+
+<div id="sidebar" class="sidebar">
+<a href="javascript:void(0)" class="close-btn" onclick="toggleSidebar()">×</a>
+<h2>Menu</h2>
+<a href="{{ url_for('auth.study') }}">📖 Study</a>
+<a href="{{ url_for('auth.calendar') }}">📅 Calendar</a>
+<a href="{{ url_for('auth.schedule') }}">⏰ Schedule</a>
+<a href="{{ url_for('auth.logout') }}" class="sidebar-secondary">Log Out</a>
+<a href="{{ url_for('auth.settings') }}" class="sidebar-secondary">⚙️ Settings</a>
+</div>
+
+<div id="main-content">
+
+  <!-- Account -->
+  <div class="settings-card">
+    <h3>Account</h3>
+
+    <div class="settings-field">
+      <label>Username</label>
+      <input type="text" value="{{ username }}" disabled>
+    </div>
+
+    <div class="settings-field">
+      <label>Email</label>
+      <input type="email" id="settings-email" placeholder="email@example.com">
+    </div>
+
+    <button class="settings-save-btn" id="save-account-btn">Save changes</button>
+  </div>
+
+  <!-- Change password -->
+  <div class="settings-card">
+    <h3>Change Password</h3>
+
+    <div class="settings-field">
+      <label>Current password</label>
+      <input type="password" id="current-password" placeholder="••••••••">
+    </div>
+
+    <div class="settings-field">
+      <label>New password</label>
+      <input type="password" id="new-password" placeholder="••••••••">
+    </div>
+
+    <div class="settings-field">
+      <label>Confirm new password</label>
+      <input type="password" id="confirm-password" placeholder="••••••••">
+    </div>
+
+    <button class="settings-save-btn" id="save-password-btn">Update password</button>
+  </div>
+
+  <!-- Notifications -->
+  <div class="settings-card">
+    <h3>Notifications</h3>
+
+    <div class="settings-toggle-row">
+      <div>
+        <strong>Deadline reminders</strong>
+        <span>Send notification 1 day before deadline</span>
+      </div>
+      <label class="switch">
+        <input type="checkbox" checked>
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <div class="settings-toggle-row">
+      <div>
+        <strong>Incoming messages</strong>
+        <span>Notify when there are new messages</span>
+      </div>
+      <label class="switch">
+        <input type="checkbox" checked>
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <div class="settings-toggle-row">
+      <div>
+        <strong>Challenge Updates</strong>
+        <span>Info on new weekly challenges</span>
+      </div>
+      <label class="switch">
+        <input type="checkbox">
+        <span class="slider"></span>
+      </label>
+    </div>
+  </div>
+
+  <!-- Danger zone -->
+  <div class="settings-card danger-card">
+    <h3>Danger Zone</h3>
+    <div class="settings-toggle-row">
+      <div>
+        <strong>Delete account</strong>
+        <span>All study data & progress will be permanently lost</span>
+      </div>
+      <button class="settings-danger-btn" id="delete-account-btn">Delete Account</button>
+    </div>
+  </div>
+
+</div>
+
+<nav class="bottom-nav">
+<a href="{{ url_for('auth.home') }}" class="nav-item"><span class="icon">🏠</span>Home</a>
+<a href="{{ url_for('auth.global_chat') }}" class="nav-item"><span class="icon">💬</span>Post</a>
+<a href="{{ url_for('auth.challenge') }}" class="nav-item"><span class="icon">🏆</span>Challenge</a>
+<a href="{{ url_for('auth.profile') }}" class="nav-item"><span class="icon">👤</span>Profile</a>
+</nav>
+
+<script src="{{ url_for('static', filename='js/home.js') }}"></script>
+<script src="{{ url_for('static', filename='js/settings.js') }}"></script>
+</body>
+</html>

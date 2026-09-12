@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZenStudy - Community</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='login/home.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='login/global_chat.css') }}">
+</head>
+<body>
+
+<div class="app-header">
+  <a href="{{ url_for('auth.home') }}" class="msg-back-home" aria-label="Back">←</a>
+  <h1 class="settings-header-title">Community</h1>
+</div>
+
+<div class="tab-switcher">
+  <button class="tab-btn active" data-tab="feed">Feed</button>
+  <button class="tab-btn" data-tab="chat">Chat</button>
+</div>
+
+<div id="community-page">
+
+  <!-- ================= TAB: FEED ================= -->
+  <div class="tab-panel active" id="tab-feed">
+
+    <div class="post-composer">
+      <textarea id="post-input" placeholder="What's on your mind, {{ username }}?" rows="2"></textarea>
+      <button id="post-submit-btn" class="post-submit-btn">Post</button>
+    </div>
+
+    <div id="post-list" class="post-list"></div>
+  </div>
+
+  <!-- ================= TAB: CHAT ================= -->
+  <div class="tab-panel" id="tab-chat">
+    <div class="chat-bubble-area" id="chat-bubble-area"></div>
+
+    <form class="chat-input-bar" id="chat-input-form">
+      <input type="text" id="chat-input" placeholder="Type a message to everyone..." autocomplete="off">
+      <button type="submit" class="chat-send-btn" aria-label="Send">➤</button>
+    </form>
+  </div>
+
+</div>
+
+<nav class="bottom-nav">
+<a href="{{ url_for('auth.home') }}" class="nav-item"><span class="icon">🏠</span>Home</a>
+<a href="{{ url_for('auth.global_chat') }}" class="nav-item active"><span class="icon">💬</span>Post</a>
+<a href="{{ url_for('auth.challenge') }}" class="nav-item"><span class="icon">🏆</span>Challenge</a>
+<a href="{{ url_for('auth.profile') }}" class="nav-item"><span class="icon">👤</span>Profile</a>
+</nav>
+
+<script>
+    window.CURRENT_USER_ID = {{ user_id|tojson }};
+    window.CURRENT_USERNAME = {{ username|tojson }};
+</script>
+<script src="{{ url_for('static', filename='js/global_chat.js') }}"></script>
+</body>
+</html>

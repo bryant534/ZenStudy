@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZenStudy - Challenge</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='login/home.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='login/ai_study.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='login/challenge.css') }}">
+</head>
+<body>
+
+<div class="app-header">
+  <a href="{{ url_for('auth.home') }}" class="msg-back-home" aria-label="Back">←</a>
+  <h1 class="settings-header-title">Monthly Challenge</h1>
+</div>
+
+<div id="challenge-page">
+  <p class="challenge-intro">3 new quizzes every month. Complete them all to test your understanding!</p>
+
+  <div class="challenge-grid">
+    {% for c in challenges %}
+    <div class="challenge-block" data-id="{{ c.id }}" data-title="{{ c.title }}">
+      <div class="challenge-block-head">
+        <strong>{{ c.title }}</strong>
+        {% if c.completed %}
+          <span class="challenge-badge done">Completed {{ c.score }}/{{ c.total }}</span>
+        {% else %}
+          <span class="challenge-badge pending">Not started</span>
+        {% endif %}
+      </div>
+      <p class="challenge-desc">{{ c.description }}</p>
+      <span class="challenge-meta">{{ c.question_count }} questions</span>
+      <button class="challenge-start-btn">{% if c.completed %}Retry{% else %}Start Quiz{% endif %}</button>
+
+      <div class="challenge-quiz-area" style="display:none;"></div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<nav class="bottom-nav">
+<a href="{{ url_for('auth.home') }}" class="nav-item"><span class="icon">🏠</span>Home</a>
+<a href="{{ url_for('auth.global_chat') }}" class="nav-item"><span class="icon">💬</span>Post</a>
+<a href="{{ url_for('auth.challenge') }}" class="nav-item active"><span class="icon">🏆</span>Challenge</a>
+<a href="{{ url_for('auth.profile') }}" class="nav-item"><span class="icon">👤</span>Profile</a>
+</nav>
+
+<script src="{{ url_for('static', filename='js/challenge.js') }}"></script>
+</body>
+</html>

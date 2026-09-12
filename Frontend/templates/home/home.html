@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZenStudy - Home</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='login/home.css') }}">
+</head>
+<body>
+
+<div class="overlay" id="overlay"></div>
+
+<div class="app-header">
+  <button id="menu-btn" onclick="toggleSidebar()" aria-label="Menu">☰</button>
+  <div class="search-box">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="app-search" placeholder="Search Study, Calendar, Schedule, Setting, Tutorial...">
+    <div class="search-results" id="search-results">
+      <a href="{{ url_for('auth.study') }}" data-keywords="study material learning notes">📖 Study</a>
+      <a href="{{ url_for('auth.calendar') }}" data-keywords="calendar schedule date">📅 Calendar</a>
+      <a href="{{ url_for('auth.schedule') }}" data-keywords="schedule to do list daily schedule">⏰ Schedule</a>
+      <a href="{{ url_for('auth.challenge') }}" data-keywords="challenge">🏆 Challenge</a>
+      <a href="{{ url_for('auth.profile') }}" data-keywords="profile setting account settings">👤 Profile / Setting</a>
+      <a href="#" data-keywords="tutorial how to use guide help">❓ Tutorial & Help</a>
+      <a href="{{ url_for('auth.study_ai') }}">🤖 AI Study Helper</a>
+      <a href="{{ url_for('auth.todo_list_page') }}" data-keywords="to do list task checklist">✅ To Do List</a>
+      <a href="{{ url_for('auth.notes_page') }}" data-keywords="notes summary">📝 Notes</a>
+    </div>
+  </div>
+  <a href="{{ url_for('auth.messages') }}" class="message-btn" aria-label="Messages">💬</a>
+</div>
+
+<div id="sidebar" class="sidebar">
+<a href="javascript:void(0)" class="close-btn" onclick="toggleSidebar()">×</a>
+<h2>Menu</h2>
+<a href="{{ url_for('auth.study') }}">📖 Study</a>
+<a href="{{ url_for('auth.calendar') }}">📅 Calendar</a>
+<a href="{{ url_for('auth.schedule') }}">⏰ Schedule</a>
+<a href="{{ url_for('auth.todo_list_page') }}">✅ To Do List</a>
+<a href="{{ url_for('auth.notes_page') }}">📝 Notes</a>
+<a href="{{ url_for('auth.logout') }}" class="sidebar-secondary">Log Out</a>
+<a href="{{ url_for('auth.settings') }}" class="sidebar-secondary">⚙️ Settings</a>
+</div>
+
+<div id="main-content">
+
+  <div class="header">
+    <h1>Welcome, {{ username }}</h1>
+  </div>
+
+  <!-- ===== 1 VERTICAL BLOCK: Notifications + Calendar combined ===== -->
+  <div class="upcoming-calendar-block">
+
+    <div class="notification-section">
+      <h3>🔔 Upcoming Deadlines (Next 7 Days)</h3>
+      <ul id="notification-list">
+        {% if notifications %}
+          {% for notif in notifications %}
+          <li class="notif-item"><strong>{{ notif[0] }}</strong> - Due: {{ notif[1] }}</li>
+          {% endfor %}
+        {% else %}
+          <li class="notif-item" style="background: transparent;">No upcoming deadlines for this week. Enjoy! 🎉</li>
+        {% endif %}
+      </ul>
+    </div>
+
+    <a href="{{ url_for('auth.calendar') }}" class="calendar-section">
+      <div class="feature-block-head">
+        <div class="workspace-icon">📅</div>
+        <div>
+          <strong>Calendar</strong>
+          <span>View your schedule, deadlines, and daily activities</span>
+        </div>
+      </div>
+      <div class="mini-week-preview" id="mini-week-preview"></div>
+    </a>
+
+  </div>
+
+  <!-- ===== Quick actions: Start a Post & Start a Study ===== -->
+<div class="quick-actions-row">
+  <a href="{{ url_for('auth.global_chat') }}" class="quick-action-card">
+    <div class="quick-action-icon">✍️</div>
+    <span>Start a Post</span>
+  </a>
+  <a href="{{ url_for('auth.study') }}" class="quick-action-card">
+    <div class="study-circle"><span class="study-num">25</span><span class="study-unit">min</span></div>
+    <span>Start a Study</span>
+  </a>
+  <a href="{{ url_for('auth.study_ai') }}" class="quick-action-card">
+    <div class="quick-action-icon">🤖</div>
+    <span>AI Helper</span>
+  </a>
+</div>
+
+  <!-- ===== Currently Studying ===== -->
+  <div class="active-study-block">
+    <h3>Currently Studying</h3>
+    <div class="active-study-list" id="active-study-list">
+      {% for a in active_list %}
+      <div class="active-study-item" data-seconds="{{ a.elapsed_seconds }}">
+        <div class="msg-avatar">{{ a.username[0]|upper }}</div>
+        <div class="active-study-info">
+          <strong>{{ a.username }}</strong>
+          <span class="active-topic">{{ a.topic }}</span>
+        </div>
+        <div class="active-timer-wrap">
+          <span class="live-dot"></span>
+          <span class="active-timer">00:00</span>
+        </div>
+      </div>
+      {% else %}
+      <p class="empty-state">No one is studying right now.</p>
+      {% endfor %}
+    </div>
+  </div>
+
+</div>
+
+<nav class="bottom-nav">
+<a href="{{ url_for('auth.home') }}" class="nav-item active"><span class="icon">🏠</span>Home</a>
+<a href="{{ url_for('auth.global_chat') }}" class="nav-item"><span class="icon">💬</span>Post</a>
+<a href="{{ url_for('auth.challenge') }}" class="nav-item"><span class="icon">🏆</span>Challenge</a>
+<a href="{{ url_for('auth.profile') }}" class="nav-item"><span class="icon">👤</span>Profile</a>
+</nav>
+
+<script src="{{ url_for('static', filename='js/home.js') }}"></script>
+</body>
+</html>

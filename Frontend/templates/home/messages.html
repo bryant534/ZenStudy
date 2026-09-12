@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZenStudy - Messages</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='login/home.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='login/messages.css') }}">
+</head>
+<body>
+
+<div id="msg-page">
+
+  <!-- ================= LEFT PANEL: conversation list ================= -->
+  <div class="msg-list-panel" id="msg-list-panel">
+    <div class="msg-list-header">
+      <a href="{{ url_for('auth.home') }}" class="msg-back-home" aria-label="Back">←</a>
+      <h1>Messaging</h1>
+    </div>
+
+    <div class="msg-search-box">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="msg-search" placeholder="Search name...">
+    </div>
+
+    <div class="msg-conv-list" id="msg-conv-list">
+      {% for c in conversations %}
+      <div class="msg-conv-item {% if loop.first %}active{% endif %}"
+           data-id="{{ c.id }}" data-name="{{ c.name }}" data-avatar="{{ c.avatar }}">
+        <div class="msg-avatar">
+          {{ c.avatar }}
+          {% if c.online %}<span class="online-dot"></span>{% endif %}
+        </div>
+        <div class="msg-conv-info">
+          <div class="msg-conv-top">
+            <strong>{{ c.name }}</strong>
+            <span class="msg-time">{{ c.time }}</span>
+          </div>
+          <div class="msg-conv-bottom">
+            <span class="msg-preview">{{ c.last_message }}</span>
+            {% if c.unread > 0 %}<span class="msg-unread-badge">{{ c.unread }}</span>{% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- ================= RIGHT PANEL: chat window ================= -->
+  <div class="msg-chat-panel" id="msg-chat-panel">
+    <div class="msg-chat-header">
+      <button class="msg-back-btn" id="msg-back-btn" aria-label="Back to list">←</button>
+      <div class="msg-avatar" id="chat-avatar">N</div>
+      <div class="msg-chat-title">
+        <strong id="chat-name">Nadia Putri</strong>
+        <span id="chat-status">Online</span>
+      </div>
+    </div>
+
+    <div class="msg-bubble-area" id="msg-bubble-area">
+      <div class="msg-bubble other">
+        <p>Hello! What time are we studying together tomorrow?</p>
+        <span class="bubble-time">12:30</span>
+      </div>
+      <div class="msg-bubble me">
+        <p>At 3 PM, on the 2nd floor of the library</p>
+        <span class="bubble-time">12:38</span>
+      </div>
+      <div class="msg-bubble other">
+        <p>Okay got it, tomorrow at 3 PM!</p>
+        <span class="bubble-time">12:41</span>
+      </div>
+    </div>
+
+    <form class="msg-input-bar" id="msg-input-form">
+      <input type="text" id="msg-input" placeholder="Type a message..." autocomplete="off">
+      <button type="submit" class="msg-send-btn" aria-label="Send">➤</button>
+    </form>
+  </div>
+
+</div>
+
+<script src="{{ url_for('static', filename='js/home.js') }}"></script>
+<script src="{{ url_for('static', filename='js/messages.js') }}"></script>
+</body>
+</html>

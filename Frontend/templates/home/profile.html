@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZenStudy - Profile</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='login/home.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='login/profile.css') }}">
+</head>
+<body>
+
+<div class="overlay" id="overlay"></div>
+
+<div class="app-header">
+  <button id="menu-btn" onclick="toggleSidebar()" aria-label="Menu">☰</button>
+  <h1 class="settings-header-title">Profile</h1>
+</div>
+
+<div id="sidebar" class="sidebar">
+<a href="javascript:void(0)" class="close-btn" onclick="toggleSidebar()">×</a>
+<h2>Menu</h2>
+<a href="{{ url_for('auth.study') }}">📖 Study</a>
+<a href="{{ url_for('auth.calendar') }}">📅 Calendar</a>
+<a href="{{ url_for('auth.schedule') }}">⏰ Schedule</a>
+<a href="{{ url_for('auth.logout') }}" class="sidebar-secondary">Log Out</a>
+<a href="{{ url_for('auth.settings') }}" class="sidebar-secondary">⚙️ Settings</a>
+</div>
+
+<div id="profile-page">
+
+  <div class="profile-banner"></div>
+
+  <div class="profile-card">
+    <div class="profile-avatar">{{ username[0]|upper }}</div>
+
+    <div class="profile-name-row">
+      <h2>{{ username }}</h2>
+      <div class="streak-badge {% if is_active_today %}active{% else %}inactive{% endif %}">
+        <span class="streak-fire">🔥</span>
+        <span class="streak-num">{{ longest_streak }}</span>
+      </div>
+    </div>
+    <span class="profile-sub">
+      {% if current_streak > 0 %}
+        Currently on a {{ current_streak }}-day streak
+      {% else %}
+        Streak broken — start again today!
+      {% endif %}
+    </span>
+
+    <div class="profile-stats-grid">
+      <div class="stat-box">
+        <strong>{{ avg_minutes }} min</strong>
+        <span>Average per session</span>
+      </div>
+      <div class="stat-box">
+        <strong>{{ weekly_hours }} hours</strong>
+        <span>Average per week</span>
+      </div>
+      <div class="stat-box">
+        <strong>{{ longest_streak }} days</strong>
+        <span>Longest streak</span>
+      </div>
+    </div>
+
+    <a href="{{ url_for('auth.study') }}" class="profile-study-btn">Start Studying Now</a>
+  </div>
+
+</div>
+
+<nav class="bottom-nav">
+<a href="{{ url_for('auth.home') }}" class="nav-item"><span class="icon">🏠</span>Home</a>
+<a href="{{ url_for('auth.global_chat') }}" class="nav-item"><span class="icon">💬</span>Post</a>
+<a href="{{ url_for('auth.challenge') }}" class="nav-item"><span class="icon">🏆</span>Challenge</a>
+<a href="{{ url_for('auth.profile') }}" class="nav-item active"><span class="icon">👤</span>Profile</a>
+</nav>
+
+<script src="{{ url_for('static', filename='js/home.js') }}"></script>
+</body>
+</html>

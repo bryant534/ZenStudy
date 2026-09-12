@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZenStudy - Schedule</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='login/home.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='login/calendar.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='login/schedule.css') }}">
+</head>
+<body>
+
+<div class="app-header">
+  <a href="{{ url_for('auth.home') }}" class="msg-back-home" aria-label="Back">←</a>
+  <h1 class="settings-header-title">Schedule</h1>
+</div>
+
+<div id="schedule-page">
+
+  <div class="schedule-date-bar">
+    <button id="day-prev" class="cal-nav-btn" aria-label="Previous day">‹</button>
+    <div class="schedule-date-label">
+      <strong id="schedule-day-name">Monday</strong>
+      <span id="schedule-date-full">September 1, 2026</span>
+    </div>
+    <button id="day-next" class="cal-nav-btn" aria-label="Next day">›</button>
+    <button id="day-today-btn" class="cal-today-btn">Today</button>
+  </div>
+
+  <div class="schedule-timeline" id="schedule-timeline"></div>
+
+</div>
+
+<!-- Add/edit event modal -->
+<div class="cal-modal-overlay" id="sch-modal-overlay">
+  <div class="cal-modal">
+    <div class="cal-modal-head">
+      <h3 id="sch-modal-hour">09:00</h3>
+      <button class="close-btn" id="sch-modal-close" type="button">×</button>
+    </div>
+
+    <form id="sch-event-form">
+      <label class="cal-field">
+        <span>Time <em>(required)</em></span>
+        <input type="time" id="sch-event-time" required>
+      </label>
+      <label class="cal-field">
+        <span>Activity</span>
+        <input type="text" id="sch-event-text" placeholder="Example: Study Calculus" required>
+      </label>
+      <button type="submit" class="cal-add-btn">Save</button>
+    </form>
+  </div>
+</div>
+
+<nav class="bottom-nav">
+<a href="{{ url_for('auth.home') }}" class="nav-item"><span class="icon">🏠</span>Home</a>
+<a href="{{ url_for('auth.global_chat') }}" class="nav-item"><span class="icon">💬</span>Post</a>
+<a href="{{ url_for('auth.challenge') }}" class="nav-item"><span class="icon">🏆</span>Challenge</a>
+<a href="{{ url_for('auth.profile') }}" class="nav-item"><span class="icon">👤</span>Profile</a>
+</nav>
+
+<script src="{{ url_for('static', filename='js/schedule.js') }}"></script>
+</body>
+</html>

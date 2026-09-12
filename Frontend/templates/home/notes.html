@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZenStudy - Notes</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='login/home.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='login/notes.css') }}">
+</head>
+<body>
+
+<!-- ========== LIST VIEW ========== -->
+<div id="notes-list-view">
+  <div class="app-header">
+    <a href="{{ url_for('auth.home') }}" class="msg-back-home" aria-label="Back">←</a>
+    <h1 class="settings-header-title">Notes</h1>
+    <button id="new-note-btn" class="new-note-btn" aria-label="New note">+</button>
+  </div>
+
+  <div id="notes-page">
+    <input type="text" id="notes-search" class="notes-search" placeholder="Search notes...">
+    <div class="notes-grid" id="notes-grid"></div>
+    <p class="notes-empty" id="notes-empty" style="display:none;">No notes yet. Let's create one!</p>
+  </div>
+
+  <nav class="bottom-nav">
+    <a href="{{ url_for('auth.home') }}" class="nav-item"><span class="icon">🏠</span>Home</a>
+    <a href="{{ url_for('auth.global_chat') }}" class="nav-item"><span class="icon">💬</span>Post</a>
+    <a href="{{ url_for('auth.challenge') }}" class="nav-item"><span class="icon">🏆</span>Challenge</a>
+    <a href="{{ url_for('auth.profile') }}" class="nav-item"><span class="icon">👤</span>Profile</a>
+  </nav>
+</div>
+
+<!-- ========== EDITOR VIEW ========== -->
+<div id="note-editor-view" style="display:none;">
+  <div class="app-header">
+    <button id="editor-back-btn" class="msg-back-home" aria-label="Back">←</button>
+    <span class="editor-status" id="editor-status">Saved</span>
+    <button id="pin-note-btn" class="editor-icon-btn" aria-label="Pin">📌</button>
+    <button id="delete-note-btn" class="editor-icon-btn" aria-label="Delete">🗑️</button>
+  </div>
+
+  <div id="editor-page">
+    <input type="text" id="note-title-input" class="note-title-input" placeholder="Note title...">
+    <textarea id="note-content-input" class="note-content-input" placeholder="Write your notes here..."></textarea>
+  </div>
+
+  <div class="color-bar" id="color-bar">
+    <button class="color-swatch" data-color="default" style="background:#fff;"></button>
+    <button class="color-swatch" data-color="yellow" style="background:#FFF3B0;"></button>
+    <button class="color-swatch" data-color="green" style="background:#C9F2D8;"></button>
+    <button class="color-swatch" data-color="blue" style="background:#C7E3FA;"></button>
+    <button class="color-swatch" data-color="pink" style="background:#FAD1E0;"></button>
+    <button class="color-swatch" data-color="gray" style="background:#E0E0E4;"></button>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/notes.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,97 @@
+.settings-header-title{ font-size: 16px; font-weight: 700; margin: 0; }
+
+#profile-page{ padding-top: var(--header-h); padding-bottom: var(--nav-h); }
+
+.profile-banner{
+  height: 140px;
+  background: linear-gradient(120deg, #f6f6f6, #a2a2a2, #707071, #575757);
+  background-size: 300% 300%;
+  animation: bannerShift 8s ease infinite;
+}
+@keyframes bannerShift{
+  0%{ background-position: 0% 50%; }
+  50%{ background-position: 100% 50%; }
+  100%{ background-position: 0% 50%; }
+}
+
+.profile-card{
+  background: var(--card);
+  margin: -40px 14px 14px;
+  border-radius: 20px;
+  padding: 20px 16px 16px;
+  box-shadow: 0 2px 6px rgba(23,24,28,0.04), 0 12px 28px rgba(23,24,28,0.06);
+  position: relative;
+}
+
+.profile-avatar{
+  width: 76px; height: 76px;
+  border-radius: 50%;
+  background: var(--panel-dark);
+  color: #fff;
+  font-size: 30px;
+  font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  border: 4px solid var(--card);
+  margin-top: -58px;
+  margin-bottom: 10px;
+}
+
+.profile-name-row{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.profile-name-row h2{ margin: 0; font-size: 19px; }
+
+.streak-badge{
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-weight: 700;
+  font-size: 13px;
+}
+.streak-badge.active{
+  background: rgba(255,140,0,0.12);
+  color: #E07B00;
+}
+.streak-badge.active .streak-fire{ filter: none; }
+.streak-badge.inactive{
+  background: #EFEFF3;
+  color: var(--ink-soft);
+}
+.streak-badge.inactive .streak-fire{ filter: grayscale(1); opacity: 0.6; }
+
+.profile-sub{ display: block; font-size: 12px; color: var(--ink-soft); margin-top: 4px; }
+
+.profile-stats-grid{
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 18px;
+}
+.stat-box{
+  background: var(--bg);
+  border-radius: 14px;
+  padding: 12px 6px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.stat-box strong{ font-size: 15px; }
+.stat-box span{ font-size: 10.5px; color: var(--ink-soft); }
+
+.profile-study-btn{
+  display: block;
+  text-align: center;
+  margin-top: 18px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--accent);
+  color: #fff;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 13.5px;
+}

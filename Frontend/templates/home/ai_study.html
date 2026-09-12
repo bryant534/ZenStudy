@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZenStudy - AI Study Helper</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='login/home.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='login/ai_study.css') }}">
+</head>
+<body>
+
+<div class="app-header">
+  <a href="{{ url_for('auth.home') }}" class="msg-back-home" aria-label="Back">←</a>
+  <h1 class="settings-header-title">AI Study Helper</h1>
+</div>
+
+<div class="tab-switcher">
+  <button class="tab-btn active" data-mode="quiz">Quiz</button>
+  <button class="tab-btn" data-mode="flashcard">Flashcard</button>
+  <button class="tab-btn" data-mode="summary">Summary</button>
+  <button class="tab-btn" data-mode="ask">Ask AI</button>
+</div>
+
+<div id="ai-page">
+
+  <div id="input-section">
+    <textarea id="material-input" placeholder="Paste your study material here (notes, textbook chapters, etc.)..." rows="7"></textarea>
+
+    <div class="count-picker" id="count-picker">
+      <span class="count-label">Quantity:</span>
+      <button class="count-btn" data-count="3">3</button>
+      <button class="count-btn active" data-count="5">5</button>
+      <button class="count-btn" data-count="10">10</button>
+    </div>
+
+    <div id="ask-section" style="display:none;">
+      <input type="text" id="question-input" placeholder="Example: What is the integral of x^2? or explain Newton's 2nd law">
+      <span class="ask-hint">The material above is optional, used as additional context if provided</span>
+    </div>
+
+    <button id="generate-btn" class="generate-btn">Generate Quiz</button>
+    <p class="error-text" id="error-text" style="display:none;"></p>
+  </div>
+
+  <div id="loading-state" style="display:none;">
+    <div class="spinner"></div>
+    <span>AI is thinking...</span>
+  </div>
+
+  <div id="result-section" style="display:none;"></div>
+
+</div>
+
+<nav class="bottom-nav">
+<a href="{{ url_for('auth.home') }}" class="nav-item"><span class="icon">🏠</span>Home</a>
+<a href="{{ url_for('auth.global_chat') }}" class="nav-item"><span class="icon">💬</span>Post</a>
+<a href="{{ url_for('auth.challenge') }}" class="nav-item"><span class="icon">🏆</span>Challenge</a>
+<a href="{{ url_for('auth.profile') }}" class="nav-item"><span class="icon">👤</span>Profile</a>
+</nav>
+
+<script src="{{ url_for('static', filename='js/ai_study.js') }}"></script>
+</body>
+</html>

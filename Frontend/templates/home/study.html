@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZenStudy - Study</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='login/study.css') }}">
+</head>
+<body>
+
+<div id="study-page">
+
+  <div class="study-topbar">
+    <a href="{{ url_for('auth.home') }}" class="study-back">← Home</a>
+    <span class="study-username">{{ username }}</span>
+  </div>
+
+  <!-- ===== SETUP: before starting ===== -->
+  <div id="study-setup">
+    <h1>What are you focusing on today?</h1>
+    <input type="text" id="topic-input" placeholder="Example: Calculus, Organic Chemistry..." maxlength="40">
+
+    <div class="duration-picker" id="duration-picker">
+      <button class="duration-btn" data-minutes="30">30 min</button>
+      <button class="duration-btn active" data-minutes="60">1 hour</button>
+      <button class="duration-btn" data-minutes="120">2 hours</button>
+      <button class="duration-btn" data-minutes="180">3 hours</button>
+      <button class="duration-btn" data-minutes="240">4 hours</button>
+    </div>
+
+    <div class="music-picker">
+      <h3>Background music (optional)</h3>
+      <div class="music-grid" id="music-grid">
+        <button class="music-btn" data-track="none">🔇 <span>No music</span></button>
+        <button class="music-btn" data-track="rain">🌧️ <span>Rain</span></button>
+        <button class="music-btn" data-track="night_piano">🌙 <span>Night Piano</span></button>
+        <button class="music-btn" data-track="calm_piano">🎹 <span>Calm Piano</span></button>
+        <button class="music-btn" data-track="lofi">🎧 <span>Lo-fi</span></button>
+        <button class="music-btn" data-track="white_noise">🌫️ <span>White Noise</span></button>
+      </div>
+    </div>
+
+    <div class="video-toggle-row">
+      <label class="switch">
+        <input type="checkbox" id="video-toggle">
+        <span class="slider"></span>
+      </label>
+      <span>Show YouTube video while studying</span>
+    </div>
+    <input type="text" id="video-id-input" class="video-id-input" placeholder="Paste YouTube video ID/link (optional)" style="display:none;">
+
+    <a href="{{ url_for('auth.study_ai') }}" class="ai-helper-block">
+  <div class="ai-helper-icon">🤖</div>
+  <div>
+    <strong>AI Study Helper</strong>
+    <span>Create quizzes, flashcards, or summaries from your material</span>
+  </div>
+</a>
+
+    <button id="start-btn" class="start-btn">Start Studying</button>
+  </div>
+
+  <!-- ===== ACTIVE SESSION ===== -->
+  <div id="study-active" style="display:none;">
+
+  <button id="float-btn" class="control-btn" style="margin-bottom:14px;">🗗 Make it a Floating Window</button>
+
+  <div id="floating-widget-content" class="floating-widget">
+    <div class="floating-row">
+
+      <div class="timer-circle-wrap">
+        <svg class="timer-svg" viewBox="0 0 200 200">
+          <circle class="timer-track" cx="100" cy="100" r="90"></circle>
+          <circle class="timer-progress" id="timer-progress" cx="100" cy="100" r="90"></circle>
+        </svg>
+        <div class="timer-center">
+          <span id="timer-display">25:00</span>
+          <span id="timer-topic-label">Studying</span>
+        </div>
+      </div>
+
+      <div class="video-frame-wrap" id="video-frame-wrap" style="display:none;">
+        <iframe id="yt-frame" src="" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+      </div>
+
+    </div>
+
+    <div class="motivation-text" id="motivation-text">Stay focused, you can do this! 💪</div>
+  </div>
+
+  <div class="study-controls">
+    <button id="pause-btn" class="control-btn">⏸ Pause</button>
+    <button id="stop-btn" class="control-btn danger">⏹ Finish</button>
+  </div>
+</div>
+
+  <!-- ===== DONE ===== -->
+  <div id="study-done" style="display:none;">
+    <div class="done-emoji">🎉</div>
+    <h2>Study session completed!</h2>
+    <p id="done-summary"></p>
+    <a href="{{ url_for('auth.home') }}" class="start-btn">Back to Home</a>
+  </div>
+
+</div>
+
+<!-- Audio tracks — replace src with your own mp3 files in /static/audio/ -->
+<audio id="audio-rain" src="{{ url_for('static', filename='audio/rain.mp3') }}" loop></audio>
+<audio id="audio-night_piano" src="{{ url_for('static', filename='audio/night_piano.mp3') }}" loop></audio>
+<audio id="audio-calm_piano" src="{{ url_for('static', filename='audio/calm_piano.mp3') }}" loop></audio>
+<audio id="audio-lofi" src="{{ url_for('static', filename='audio/lofi.mp3') }}" loop></audio>
+<audio id="audio-white_noise" src="{{ url_for('static', filename='audio/white_noise.mp3') }}" loop></audio>
+
+<script src="{{ url_for('static', filename='js/study.js') }}"></script>
+</body>
+</html>

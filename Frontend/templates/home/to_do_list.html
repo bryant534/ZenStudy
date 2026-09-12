@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZenStudy - To Do List</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='login/home.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='login/to_do_list.css') }}">
+</head>
+<body>
+
+<div class="app-header">
+  <a href="{{ url_for('auth.home') }}" class="msg-back-home" aria-label="Back">←</a>
+  <h1 class="settings-header-title">To Do List</h1>
+</div>
+
+<div id="todo-page">
+
+  <form id="todo-form" class="todo-add-form">
+    <input type="text" id="todo-input" placeholder="Add a new task..." autocomplete="off">
+    <input type="date" id="todo-date-input">
+    <button type="submit" class="todo-add-btn" aria-label="Add">+</button>
+  </form>
+
+  <div class="todo-section">
+    <h3>Active</h3>
+    <div class="todo-list" id="todo-list-active"></div>
+  </div>
+
+  <div class="todo-section">
+    <h3>Completed</h3>
+    <div class="todo-list" id="todo-list-done"></div>
+  </div>
+
+  <p class="todo-empty" id="todo-empty" style="display:none;">No tasks yet. Let's add one!</p>
+
+</div>
+
+<nav class="bottom-nav">
+<a href="{{ url_for('auth.home') }}" class="nav-item"><span class="icon">🏠</span>Home</a>
+<a href="{{ url_for('auth.global_chat') }}" class="nav-item"><span class="icon">💬</span>Post</a>
+<a href="{{ url_for('auth.challenge') }}" class="nav-item"><span class="icon">🏆</span>Challenge</a>
+<a href="{{ url_for('auth.profile') }}" class="nav-item"><span class="icon">👤</span>Profile</a>
+</nav>
+
+<script src="{{ url_for('static', filename='js/to_do_list.js') }}"></script>
+</body>
+</html>

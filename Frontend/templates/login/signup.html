@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Signup</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='login/signup.css') }}">
+</head>
+<body>
+    <form action="/signup" method="post">
+         <h1>Hi Zennet</h1>
+        <label for="Email">Email</label>
+        <input id="Email" name="Email" type="email" placeholder="Please input your email address..." required>
+
+        <label for="Username">Username</label>
+        <input id="Username" name="Username" type="text" placeholder="Please input your username..." required>
+
+        <label for="Password">Password</label>
+        <input id="Password" name="Password" type="password" placeholder="Please input your password..." required>
+
+        <label for="ConfirmPassword">Confirm Password</label>
+        <input id="ConfirmPassword" name="ConfirmPassword" type="password" placeholder="Please confirm your password..." required>
+
+        <button type="submit">Sign up</button>
+        <p>Already have an account? <a href="{{ url_for('auth.login') }}">log in</a></p>
+    </form>
+   
+</body>
+</html>

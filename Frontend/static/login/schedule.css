@@ -1,0 +1,54 @@
+#schedule-page{
+  padding-top: calc(var(--header-h) + 14px);
+  padding-bottom: var(--nav-h);
+  padding-left: 14px; padding-right: 14px;
+  max-width: 640px; margin: 0 auto;
+}
+
+.schedule-date-bar{
+  display: flex; align-items: center; gap: 10px; margin-bottom: 16px;
+}
+.schedule-date-label{
+  flex: 1; text-align: center; display: flex; flex-direction: column;
+}
+.schedule-date-label strong{ font-size: 15px; }
+.schedule-date-label span{ font-size: 11.5px; color: var(--ink-soft); }
+
+.cal-nav-btn{
+  width: 34px; height: 34px; border-radius: 10px; border: none;
+  background: var(--card); box-shadow: 0 2px 6px rgba(23,24,28,0.06);
+  font-size: 18px; cursor: pointer; flex-shrink: 0;
+}
+.cal-today-btn{
+  border: none; background: var(--ink); color: #fff; font-size: 11.5px; font-weight: 600;
+  padding: 8px 12px; border-radius: 10px; cursor: pointer; flex-shrink: 0;
+}
+
+.schedule-timeline{ display: flex; flex-direction: column; }
+
+.schedule-hour-row{
+  display: flex; gap: 12px; padding: 10px 0;
+  border-bottom: 1px solid #F0F0F4;
+}
+.schedule-hour-label{
+  width: 52px; flex-shrink: 0; font-size: 12px; color: var(--ink-soft);
+  font-variant-numeric: tabular-nums; padding-top: 6px;
+}
+
+.schedule-hour-content{ flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+
+.schedule-note{
+  background: var(--card); border-radius: 12px; padding: 10px 12px;
+  display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  box-shadow: 0 2px 6px rgba(23,24,28,0.04), 0 6px 14px rgba(23,24,28,0.04);
+  cursor: pointer;
+}
+.schedule-note-text{ font-size: 13px; word-break: break-word; }
+.schedule-note-delete{ border: none; background: none; color: var(--ink-soft); font-size: 15px; cursor: pointer; flex-shrink: 0; }
+
+.schedule-add-btn{
+  border: 1px dashed #D8D8E2; background: transparent; border-radius: 12px;
+  padding: 9px 12px; font-size: 12.5px; color: var(--ink-soft); text-align: left; cursor: pointer;
+  transition: background-color 0.2s var(--ease), border-color 0.2s var(--ease);
+}
+.schedule-add-btn:hover{ background: var(--bg); border-color: var(--ink); }
